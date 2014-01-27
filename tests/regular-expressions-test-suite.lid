@@ -1,5 +1,5 @@
 library: regular-expressions-test-suite
-files: library
+files: regular-expressions-test-suite-library
        api
        pcre
        regular-expressions-test-suite

@@ -152,15 +152,3 @@ define suite regular-expressions-test-suite ()
   // It's sometimes useful to use -ignore-suite to skip this one because it's so noisy.
   suite pcre-test-suite;
 end;
-
-define method main
-    () => ()
-  let filename = locator-name(as(<file-locator>, application-name()));
-  if (split(filename, ".")[0] = "regular-expressions-test-suite")
-    run-test-application(regular-expressions-test-suite);
-  end;
-end;
-
-main();
-
-

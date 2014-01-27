@@ -4,11 +4,11 @@ define library regular-expressions-test-suite
   use common-dylan;
   use io,
     import: { streams };
+  use strings;
   use system,
     import: { file-system,
               locators,
               operating-system };
-  use strings;
   use testworks;
   use testworks-specs;
   use regular-expressions,
@@ -22,11 +22,7 @@ define module regular-expressions-test-suite
     rename: { format-to-string => sprintf };
   use regex-implementation;
   use file-system;
-  use locators,
-    import: { <directory-locator>,
-              <file-locator>,
-              locator-name,
-              subdirectory-locator };
+  use locators;
   use operating-system,
     import: { environment-variable };
   use testworks;
