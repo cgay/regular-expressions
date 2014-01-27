@@ -33,6 +33,8 @@ copyright: see below
 
 define library regular-expressions
   use dylan;
+  use collections,
+    import: { plists };
   use common-dylan;
   use strings;
   export
@@ -74,6 +76,7 @@ define module regex-implementation
   use common-dylan;
   use dylan-extensions,
     import: { <byte-character>, string-hash };
+  use plists;
   use strings,
     import: { char-equal-ic?,
               decimal-digit? };

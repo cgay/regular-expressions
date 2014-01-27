@@ -341,7 +341,8 @@ define method regex-search
         match-root?(pattern, substring, case-sensitive, num-groups, searcher);
       end if;
   if (matched?)
-    let regex-match = make(<regex-match>, regular-expression: pattern);
+    let groups = #();
+    // TODO(cgay): profile this.  may want to use a plist here.
     let group-number-to-name :: <table> = pattern.group-number-to-name;
     for (index from 0 below marks.size by 2)
       let group-number = floor/(index, 2);
@@ -349,18 +350,17 @@ define method regex-search
       let bpos = marks[index];
       let epos = marks[index + 1];
       if (bpos & epos)
-        add-group(regex-match,
-                  make(<match-group>,
-                       text: copy-sequence(text, start: bpos, end: epos),
-                       start: bpos,
-                       end: epos),
-                  group-name);
+        put-property!(groups, group-name,
+                      make(<match-group>,
+                           text: copy-sequence(text, start: bpos, end: epos),
+                           start: bpos,
+                           end: epos));
       else
         // This group wasn't matched.
-        add-group(regex-match, #f, group-name);
+        put-property!(groups, group-name, #f);
       end;
     end;
-    regex-match
+    make(<regex-match>, groups: groups, regular-expression: pattern)
   else
     #f
   end
@@ -393,7 +393,7 @@ define method regex-search-strings
     apply(values, map(method (group)
                         group & group.group-text
                       end,
-                      match.groups-by-position))
+                      match.match-groups.value-sequence))
   else
     #f
   end
@@ -409,25 +409,14 @@ define sealed class <match-group> (<object>)
 end class <match-group>;
 
 define sealed class <regex-match> (<object>)
-  // Groups by position.  Zero is the entire match.
-  constant slot groups-by-position :: <stretchy-vector> = make(<stretchy-vector>);
-  // Named groups, if any.  Initial size 0 on the assumption that most regular
-  // expressions won't use named groups.
-  constant slot groups-by-name :: <string-table> = make(<string-table>, size: 0);
-  constant slot regular-expression :: <regex>, required-init-keyword: regular-expression:;
+  // match-groups is a property list (collections/plists) in which the
+  // property name is the name of the captured group and the position
+  // in the plist is the index of the group.
+  constant slot match-groups :: <list>,
+    required-init-keyword: groups:;
+  constant slot regular-expression :: <regex>,
+    required-init-keyword: regular-expression:;
 end class <regex-match>;
-
-define method add-group
-    (match :: <regex-match>,
-     group :: false-or(<match-group>),
-     name :: false-or(<string>))
- => (match :: <regex-match>)
-  add!(match.groups-by-position, group);
-  if (name)
-    match.groups-by-name[name] := group;
-  end;
-  match
-end;
 
 define sealed class <invalid-match-group> (<regex-error>)
 end class <invalid-match-group>;
@@ -446,23 +435,24 @@ define method match-group
  => (text :: false-or(<string>),
      start-index :: false-or(<integer>),
      end-index :: false-or(<integer>))
-  if (0 <= group-number & group-number < match.groups-by-position.size)
-    let group = match.groups-by-position[group-number];
+  let len :: <integer> = match.match-groups.size;
+  if (group-number >= 0 & group-number < floor/(len, 2))
+    let group = match.match-groups[group-number * 2 + 1];
     if (group)
       values(group.group-text, group.group-start, group.group-end)
     else
       values(#f, #f, #f)
     end
   else
-    let ng = match.groups-by-position.size;
+    let ngroups = floor/(len, 2);
     signal(make(<invalid-match-group>,
                 format-string: "Group number %d is out of bounds for regex %s match.  %s",
                 format-arguments: list(group-number,
                                        match.regular-expression.regex-pattern,
-                                       if (ng == 1)
+                                       if (ngroups == 1)
                                          "There is only 1 group."
                                        else
-                                         format-to-string("There are %d groups.", ng)
+                                         format-to-string("There are %d groups.", ngroups)
                                        end)));
   end;
 end method match-group;
@@ -472,7 +462,7 @@ define method match-group
  => (text :: false-or(<string>),
      start-index :: false-or(<integer>),
      end-index :: false-or(<integer>))
-  let group = element(match.groups-by-name, group, default: #f);
+  let group = get-property(match.match-groups, group);
   if (group)
     values(group.group-text, group.group-start, group.group-end)
   else

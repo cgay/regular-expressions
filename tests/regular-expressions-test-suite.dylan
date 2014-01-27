@@ -151,4 +151,5 @@ define suite regular-expressions-test-suite ()
   suite regular-expressions-api-test-suite;
   // It's sometimes useful to use -ignore-suite to skip this one because it's so noisy.
   suite pcre-test-suite;
+  suite regular-expressions-benchmarks;
 end;
