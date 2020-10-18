@@ -384,7 +384,10 @@ define method in-single-chars?
   member?(c, set.single-chars, test: char-equal-ic?)
 end;
 
-define constant $max-character = as(<character>, 65535);
+// TODO(cgay): I changed this from 65535 to 255 due to it causing problems when
+// outputting DFM with dylan-compiler -dfm. We will need to revisit this (and
+// probably much of this library) when we do unicode for real.
+define constant $max-character = as(<character>, 255);
 
 define class <char-set-iterator> (<object>)
   slot phase :: one-of(#"byte", #"range", #"single", #"done") = #"byte";
